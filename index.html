@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Betshop</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+          integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+          crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin=""></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #mapid {
+            min-height: 600px;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        .legend {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            z-index: 99;
+        }
+        .legend img{
+            max-width:1000px;
+        }
+    </style>
+</head>
+<body>
+<div class="legend">
+    <img src="./assets/legend.png" alt="">
+</div>
+<div id="mapid"></div>
+<script>
+    var mymap = L.map('mapid', {
+        center: [44.81412860847245, 20.450520675579913],
+        zoom: 13
+    });
+    var primarySchool = L.icon({
+        iconUrl: './assets/primary.svg',
+        iconSize: [18, 18]
+    });
+    var highSchool = L.icon({
+        iconUrl: './assets/secondary.svg',
+        iconSize: [18, 18]
+    });
+    var legitBet = L.icon({
+        iconUrl: './assets/legit-bet.svg',
+        iconSize: [10, 10]
+    });
+    var nonLegitBet1 = L.icon({
+        iconUrl: './assets/nonlegit-bet-1.svg',
+        iconSize: [10, 10]
+    });
+    var nonLegitBet2 = L.icon({
+        iconUrl: './assets/nonlegit-bet-2.svg',
+        iconSize: [10, 10]
+    });
+    var nonLegitBet3 = L.icon({
+        iconUrl: './assets/nonlegit-bet-3.svg',
+        iconSize: [10, 10]
+    });
+    var nonLegitBet4 = L.icon({
+        iconUrl: './assets/nonlegit-bet-4.svg',
+        iconSize: [10, 10]
+    });
+
+    const schools = fetch('./json/schools.json').then(response => {
+        return response.json();
+    }).then(data => {
+        console.log(data)
+
+        for (let i = 0; i < data.length; i++) {
+            if (data[i].type === 1) {
+                L.marker([data[i].latitude, data[i].longitude], {icon: primarySchool}).addTo(mymap);
+            } else {
+                L.marker([data[i].latitude, data[i].longitude], {icon: highSchool}).addTo(mymap);
+            }
+        }
+    });
+
+    const legitBets = fetch('./json/legitBets.json').then(response => {
+        return response.json();
+    }).then(data => {
+        for (let i = 0; i < data.length; i++) {
+            L.marker([data[i].latitude, data[i].longitude], {icon: legitBet}).addTo(mymap);
+        }
+    });
+    const nonLegitBets = fetch('./json/nonLegitBets.json').then(response => {
+        return response.json();
+    }).then(data => {
+        for (let i = 0; i < data.length; i++) {
+            
+            if (data[i].pivot.distance < 50) {
+                drawLine(data, i, '#A60000', nonLegitBet4, 1, 'none')
+            } else if (data[i].pivot.distance > 50 && data[i].pivot.distance < 100) {
+                drawLine(data, i, '#FF3131', nonLegitBet3, 1, "none")
+            } else if (data[i].pivot.distance > 100 && data[i].pivot.distance < 150) {
+                drawLine(data, i, '#FF4F4F', nonLegitBet2, 1, 'none')
+            } else if (data[i].pivot.distance > 150 && data[i].pivot.distance < 250) {
+                drawLine(data, i, '#FFA4A4', nonLegitBet1, 0.5, "8, 3")
+            }
+        }
+    });
+
+    function drawLine(data, index, color, icon, opacity, dashArray) {
+        L.marker([data[index].latitude, data[index].longitude], {icon: icon}).addTo(mymap);
+        for (let j = 0; j < data[index].schools.length; j++) {
+
+            var pointA = new L.LatLng(data[index].latitude, data[index].longitude);
+            var pointB = new L.LatLng(data[index].schools[j].latitude, data[index].schools[j].longitude);
+            var pointList = [pointA, pointB];
+
+            var firstpolyline = new L.Polyline(pointList, {
+                color: color,
+                opacity: opacity,
+                weight: 1,
+                smoothFactor: 1,
+                dashArray: dashArray,
+            });
+            firstpolyline.addTo(mymap);
+        }
+    }
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+    }).addTo(mymap);
+</script>
+</body>
+</html>
